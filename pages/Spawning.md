@@ -343,7 +343,7 @@ $ cargo run --example hello-redis
 got value from the server; result=Some(b"world")
 ```
 
-现在，我们可以获取和设置值，但还有个问题：连接之间，值不能被共享。如果另一个套接字连接，并尝试`GET``hello`key，它将找不到任何内容。
+现在，我们可以获取和设置值，但还有个问题：连接之间，值不能被共享。如果另一个套接字连接，并尝试`GET` `hello`key，它将找不到任何内容。
 
 你可以在[这里](https://github.com/tokio-rs/website/blob/master/tutorial-code/spawning/src/main.rs)找到完整代码。
 
