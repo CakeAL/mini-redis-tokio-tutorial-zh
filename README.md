@@ -16,4 +16,7 @@
   - [Setup 准备工作](./pages/Setup.md)
   - [Hello Tokio 你好 Tokio](./pages/HelloTokio.md)
   - [Spawning 生成任务](./pages/Spawning.md)
-> 本文档最后更新日期：2024 年 5 月 18 日
+  - [Shared state 共享状态](./pages/Sharedstate.md)
+
+
+> 本文档最后更新日期：2024 年 5 月 19 日
