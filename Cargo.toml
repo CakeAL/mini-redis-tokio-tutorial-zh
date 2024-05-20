@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 tokio = {version = "1.37.0", features = ["full"]}
 mini-redis = "0.4.1"
+bytes = "1.6.0"
