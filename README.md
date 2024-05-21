@@ -18,5 +18,6 @@
   - [Spawning 生成任务](./pages/Spawning.md)
   - [Shared state 共享状态](./pages/Sharedstate.md)
   - [Channels 管道](./pages/Channels.md) 
+  - [I/O](./pages/IO.md)
 
-> 本文档最后更新日期：2024 年 5 月 20 日
+> 本文档最后更新日期：2024 年 5 月 21 日
