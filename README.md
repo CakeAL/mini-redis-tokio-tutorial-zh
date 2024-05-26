@@ -23,5 +23,7 @@
   - [Async in depth 深入异步](./pages/Asyncindepth.md)
   - [Select 选择先完成的](./pages/Select.md)
   - [Streams 流](./pages/Streams.md)
+- [Topics 其他主题](./pages/Topics.md)
+  - [Bridging with sync code 异步与同步代码共存](./pages/Bridgingwithsynccode.md)
 
-> 本文档最后更新日期：2024 年 5 月 25 日
+> 本文档最后更新日期：2024 年 5 月 26 日
