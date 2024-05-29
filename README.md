@@ -27,5 +27,6 @@
   - [Bridging with sync code 异步与同步代码共存](./pages/Bridgingwithsynccode.md)
   - [Graceful shutdown 如何优雅地结束程序](./pages/Gracefulshutdown.md)
   - [Getting started with Tracing 开始使用Tracing日志](./pages/Tracing.md)
+  - [Next steps with Tracing 更进一步使用Tracing日志](./pages/TracingNext.md)
 
-> 本文档最后更新日期：2024 年 5 月 28 日
+> 本文档最后更新日期：2024 年 5 月 29 日
