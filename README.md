@@ -30,4 +30,4 @@
   - [Next steps with Tracing 更进一步使用Tracing日志](./pages/TracingNext.md)
   - [Unit Testing 单元测试](./pages/UnitTesting.md)
 
-> 本文档最后更新日期：2024 年 5 月 29 日
+> 本文档最后更新日期：2024 年 10 月 15 日
