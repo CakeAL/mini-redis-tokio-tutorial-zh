@@ -1,0 +1,339 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Next steps with Tracing 更进一步使用Tracing日志 - Mini Redis Tokio Tutorial 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="Intro.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Overview.html"><strong aria-hidden="true">1.1.</strong> Overview 概览</a></li><li class="chapter-item expanded "><a href="Setup.html"><strong aria-hidden="true">1.2.</strong> Setup 准备工作</a></li><li class="chapter-item expanded "><a href="HelloTokio.html"><strong aria-hidden="true">1.3.</strong> Hello Tokio 你好 Tokio</a></li><li class="chapter-item expanded "><a href="Spawning.html"><strong aria-hidden="true">1.4.</strong> Spawning 生成任务</a></li><li class="chapter-item expanded "><a href="Sharedstate.html"><strong aria-hidden="true">1.5.</strong> Shared state 共享状态</a></li><li class="chapter-item expanded "><a href="Channels.html"><strong aria-hidden="true">1.6.</strong> Channels 管道</a></li><li class="chapter-item expanded "><a href="IO.html"><strong aria-hidden="true">1.7.</strong> I/O</a></li><li class="chapter-item expanded "><a href="Framing.html"><strong aria-hidden="true">1.8.</strong> Framing 解析帧</a></li><li class="chapter-item expanded "><a href="Asyncindepth.html"><strong aria-hidden="true">1.9.</strong> Async in depth 深入异步</a></li><li class="chapter-item expanded "><a href="Select.html"><strong aria-hidden="true">1.10.</strong> Select 选择先完成的</a></li><li class="chapter-item expanded "><a href="Streams.html"><strong aria-hidden="true">1.11.</strong> Streams 流</a></li></ol></li><li class="chapter-item expanded "><a href="Topics.html"><strong aria-hidden="true">2.</strong> Topics 其他主题</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Bridgingwithsynccode.html"><strong aria-hidden="true">2.1.</strong> Bridging with sync code 异步与同步代码共存</a></li><li class="chapter-item expanded "><a href="Gracefulshutdown.html"><strong aria-hidden="true">2.2.</strong> Graceful shutdown 如何优雅地结束程序</a></li><li class="chapter-item expanded "><a href="Tracing.html"><strong aria-hidden="true">2.3.</strong> Getting started with Tracing 开始使用Tracing日志</a></li><li class="chapter-item expanded "><a href="TracingNext.html" class="active"><strong aria-hidden="true">2.4.</strong> Next steps with Tracing 更进一步使用Tracing日志</a></li><li class="chapter-item expanded "><a href="UnitTesting.html"><strong aria-hidden="true">2.5.</strong> Unit Testing 单元测试</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Mini Redis Tokio Tutorial 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="next-steps-with-tracing-更进一步使用-tracing-日志"><a class="header" href="#next-steps-with-tracing-更进一步使用-tracing-日志">Next steps with Tracing 更进一步使用 Tracing 日志</a></h1>
+<h1 id="tokio-console-tokio-控制台"><a class="header" href="#tokio-console-tokio-控制台">Tokio-console Tokio 控制台</a></h1>
+<p><a href="https://github.com/tokio-rs/console"><code>tokio-console</code></a>是一个类似于 htop 的实用工具，让你可以看到应用程序的 span 和事件的实时视图。它还可以表示 Tokio 运行时创建的“资源”，例如任务。这对于理解开发过程中的性能问题至关重要。</p>
+<p>例如，要在<a href="https://github.com/tokio-rs/mini-redis">mini-redis 项目</a>中使用 Tokio 控制台，你需要在 Tokio 包开启<code>tracing</code>feature：</p>
+<pre><code class="language-toml"># Update the tokio import in your Cargo.toml
+tokio = { version = "1", features = ["full", "tracing"] }
+</code></pre>
+<p>注意，<code>full</code>没启用<code>tracing</code>。</p>
+<p>你还需要添加<code>console-subscriber</code>包依赖。这个 crate 提供了一个<code>Subscriber</code>实现，可以替换掉 mini-redis 中使用的实现：</p>
+<pre><code class="language-toml"># Add this to the dependencies section of your Cargo.toml
+console-subscriber = "0.1.5"
+</code></pre>
+<p>最后，在<code>src/bin/server.rs</code>，替换调用<code>tracing_subscriber</code>为<code>console-subscriber</code>：</p>
+<p>替换：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>tracing_subscriber::fmt::try_init()?;
+<span class="boring">}</span></code></pre></pre>
+<p>为：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>console_subscriber::init();
+<span class="boring">}</span></code></pre></pre>
+<p>这将会启用<code>console_subscriber</code>，这意味着任何与<code>tokio-console</code>相关的追踪都将被记录。日志仍会被输出到 stdout（基于<code>RUST_LOG</code>环境变量的值）。</p>
+<p>现在我们应该准备好再次启动 mini-redis，这次使用<code>tokio_unstable</code>flag（这是启用日志追踪的必要操作）：</p>
+<pre><code class="language-bash">RUSTFLAGS="--cfg tokio_unstable" cargo run --bin mini-redis-server
+</code></pre>
+<p><code>tokio_unstable</code>flag 让我们可以使用 Tokio 提供的额外 API，这些 API 目前没有保证稳定性（换句话说，这些 API 允许对它进行重大更改）。</p>
+<pre><code class="language-bash">cargo install --locked tokio-console
+</code></pre>
+<p>之后运行：</p>
+<pre><code class="language-bash">tokio-console
+</code></pre>
+<p>你将会看到的初始时图是正在运行的 tokio 任务。 <br />
+例如：</p>
+<p><img src="https://raw.githubusercontent.com/tokio-rs/console/main/assets/tasks_list.png" alt="" /></p>
+<p>它还可以在任务完成后展示一段时间（这些任务将被显示为灰色）。您可以通过运行 mini-redis hello world 示例（这在<a href="https://github.com/tokio-rs/mini-redis">mini-redis 存储库</a>中可以找到）：</p>
+<pre><code class="language-bash">cargo run --example hello_world
+</code></pre>
+<p>如果你按下<code>r</code>，你会进入资源视图。这展示了信号量，锁，和其他属于 TOkio 运行时的结构。例如：</p>
+<p><img src="https://raw.githubusercontent.com/tokio-rs/console/main/assets/resources.png" alt="" /></p>
+<p>每当你需要查看 Tokio 运行时内部来更好地理解你的应用程序性能时，你可以使用 tokio-console 来查看正在发生什么，帮助你发现死锁和其他的状况。</p>
+<p>了解更多如何使用 tokio-console，请查看<a href="https://docs.rs/tokio-console/latest/tokio_console/#using-the-console">文档页面</a>。</p>
+<h1 id="与-opentelemetry-集成"><a class="header" href="#与-opentelemetry-集成">与 OpenTelemetry 集成</a></h1>
+<p>OpenTelemetry (OTel)有多种含义；首先，这是一个开放规范，定义满足大多数用户的日志跟踪和指标的数据类型。这也是一系列特定语言的 SDK，提供检测，便于从应用中发出日志跟踪和指标。第三点，还有 OpenTelemetry Collector，一个与你的应用一起运行的二进制文件，用于收集日志跟踪和指标，最后将其推送给 telemetry vendor(遥测供应商)，比如 DataDog，Honeycomb 或者 AWS X-Ray，它也可以将数据发送到 Prometheus 等工具。</p>
+<p><a href="https://crates.io/crates/opentelemetry">Opentelemetry crate</a>提供了 Rust 的 OpenTelemetry SDK，也就是我们本教程中使用的。</p>
+<p>本教程中，我们将设置 mini-redis 将数据发送到<a href="https://www.jaegertracing.io/">Jaeger</a>，这是一个用于可视化追踪的 UI。‘</p>
+<p>这是一个 Jaeger 的运行实例，你可以使用 Docker：</p>
+<pre><code class="language-bash">docker run -d -p6831:6831/udp -p6832:6832/udp -p16686:16686 -p14268:14268 jaegertracing/all-in-one:latest
+</code></pre>
+<p>你可以通过<a href="http://localhost:16686">http://localhost:16686</a>来访问 Jaeger 页面。它启动后长这样：</p>
+<p><img src="https://tokio.rs/img/tracing-next-steps/jaeger-first-pageload.png" alt="" /></p>
+<p>生成并发送一些跟踪数据后，我们将返回此页面。</p>
+<p>要设置 mini-redis，我们首先需要添加一些依赖项。使用以下内容更新你的 <code>Cargo.toml</code>：</p>
+<pre><code class="language-toml"># Implements the types defined in the Otel spec
+opentelemetry = "0.17.0"
+# Integration between the tracing crate and the opentelemetry crate
+tracing-opentelemetry = "0.17.2"
+# Allows you to export data to Jaeger
+opentelemetry-jaeger = "0.16.0"
+</code></pre>
+<p>现在，在<code>src/bin/server.rs</code>中添加以下导入：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use opentelemetry::global;
+use tracing_subscriber::{
+    fmt, layer::SubscriberExt, util::SubscriberInitExt,
+};
+<span class="boring">}</span></code></pre></pre>
+<p>我们稍后来看它们各自的作用。</p>
+<p>接下来使用 OTel 替换<code>tracing_subscriber</code>。</p>
+<p>替换：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>tracing_subscriber::fmt::try_init()?;
+<span class="boring">}</span></code></pre></pre>
+<p>为：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Allows you to pass along context (i.e., trace IDs) across services
+global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
+// Sets up the machinery needed to export data to Jaeger
+// There are other OTel crates that provide pipelines for the vendors
+// mentioned earlier.
+let tracer = opentelemetry_jaeger::new_pipeline()
+    .with_service_name("mini-redis")
+    .install_simple()?;
+
+// Create a tracing layer with the configured tracer
+let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+// The SubscriberExt and SubscriberInitExt traits are needed to extend the
+// Registry to accept `opentelemetry (the OpenTelemetryLayer type).
+tracing_subscriber::registry()
+    .with(opentelemetry)
+    // Continue logging to stdout
+    .with(fmt::Layer::default())
+    .try_init()?;
+<span class="boring">}</span></code></pre></pre>
+<p>现在你可以启动 mini-redis：</p>
+<pre><code class="language-bash">cargo run --bin mini-redis-server
+</code></pre>
+<p>在另外一个终端，运行 hello world 例子（这在<a href="https://github.com/tokio-rs/mini-redis">mini-redis 存储库</a>中可以找到）：</p>
+<pre><code class="language-bash">cargo run --example hello_world
+</code></pre>
+<p>现在，刷新打开的 Jaeger UI，然后在主搜索页面上，找到“mini-redis”服务下拉列表的选项/</p>
+<p>选择该选项，点击“Find Traces”按钮。将会展示我们通过运行示例发出的请求。</p>
+<p><img src="https://tokio.rs/img/tracing-next-steps/jaeger-mini-redis-overview.png" alt="" /></p>
+<p>单击跟踪会显示在处理 hello world 示例期间发出的 span 的详细视图。</p>
+<p><img src="https://tokio.rs/img/tracing-next-steps/jaeger-mini-redis-trace-details.png" alt="" /></p>
+<p>就是这样！你可以通过发送更多请求，为 mini-redis 添加额外的工具或遥测供应商（而不是我们在本地运行的 Jaeger 实例）设置 OTel 来进一步探索，对于最后一个，你可能需要引入一个额外的 crate（例如，为了把数据发送到 OTel Collector，你需要<code>opentelemetry-tolp</code> crate）。在<a href="https://github.com/open-telemetry/opentelemetry-rust/tree/main/examples">opentelemetry-rust 存储库</a>中有很多可用的实例。</p>
+<p>注意 mini-redis 仓库已经包含了使用 AWS X-Ray 的 OpenTelemetry 的完整实例，详细信息可以在<a href="https://github.com/tokio-rs/mini-redis#aws-x-ray-example"><code>README</code></a>，以及<a href="https://github.com/tokio-rs/mini-redis/blob/24d9d9f466d9078c46477bf5c2d68416553b9872/Cargo.toml#L35-L41"><code>Cargo.toml</code></a>和<a href="https://github.com/tokio-rs/mini-redis/blob/24d9d9f466d9078c46477bf5c2d68416553b9872/src/bin/server.rs#L59-L94"><code>src/bin/server.rs</code></a>文件中找到。</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="Tracing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="UnitTesting.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="Tracing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="UnitTesting.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

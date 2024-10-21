@@ -1,0 +1,458 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Shared state 共享状态 - Mini Redis Tokio Tutorial 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="Intro.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Overview.html"><strong aria-hidden="true">1.1.</strong> Overview 概览</a></li><li class="chapter-item expanded "><a href="Setup.html"><strong aria-hidden="true">1.2.</strong> Setup 准备工作</a></li><li class="chapter-item expanded "><a href="HelloTokio.html"><strong aria-hidden="true">1.3.</strong> Hello Tokio 你好 Tokio</a></li><li class="chapter-item expanded "><a href="Spawning.html"><strong aria-hidden="true">1.4.</strong> Spawning 生成任务</a></li><li class="chapter-item expanded "><a href="Sharedstate.html" class="active"><strong aria-hidden="true">1.5.</strong> Shared state 共享状态</a></li><li class="chapter-item expanded "><a href="Channels.html"><strong aria-hidden="true">1.6.</strong> Channels 管道</a></li><li class="chapter-item expanded "><a href="IO.html"><strong aria-hidden="true">1.7.</strong> I/O</a></li><li class="chapter-item expanded "><a href="Framing.html"><strong aria-hidden="true">1.8.</strong> Framing 解析帧</a></li><li class="chapter-item expanded "><a href="Asyncindepth.html"><strong aria-hidden="true">1.9.</strong> Async in depth 深入异步</a></li><li class="chapter-item expanded "><a href="Select.html"><strong aria-hidden="true">1.10.</strong> Select 选择先完成的</a></li><li class="chapter-item expanded "><a href="Streams.html"><strong aria-hidden="true">1.11.</strong> Streams 流</a></li></ol></li><li class="chapter-item expanded "><a href="Topics.html"><strong aria-hidden="true">2.</strong> Topics 其他主题</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Bridgingwithsynccode.html"><strong aria-hidden="true">2.1.</strong> Bridging with sync code 异步与同步代码共存</a></li><li class="chapter-item expanded "><a href="Gracefulshutdown.html"><strong aria-hidden="true">2.2.</strong> Graceful shutdown 如何优雅地结束程序</a></li><li class="chapter-item expanded "><a href="Tracing.html"><strong aria-hidden="true">2.3.</strong> Getting started with Tracing 开始使用Tracing日志</a></li><li class="chapter-item expanded "><a href="TracingNext.html"><strong aria-hidden="true">2.4.</strong> Next steps with Tracing 更进一步使用Tracing日志</a></li><li class="chapter-item expanded "><a href="UnitTesting.html"><strong aria-hidden="true">2.5.</strong> Unit Testing 单元测试</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Mini Redis Tokio Tutorial 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="shared-state-共享状态"><a class="header" href="#shared-state-共享状态">Shared state 共享状态</a></h1>
+<p>到目前为止，我们已经有了一个可正常工作的 key-value 服务端。然而，有个主要问题：状态不能跨连接共享。我们将在本文中解决。</p>
+<h1 id="策略"><a class="header" href="#策略">策略</a></h1>
+<p>有好几种在 Tokio 中共享状态的方法。</p>
+<ol>
+<li>使用互斥体(Mutex)保护(Guard)共享状态。</li>
+<li>生成一个任务来管理状态，并使用消息传递(message passing)来操作它。</li>
+</ol>
+<p>通常，您应该对简单数据使用第一种方法，对异步任务使用第二种方法（例如 I/O 原语操作）。在本章中，共享的数据是<code>HashMap</code>，对应的操作是<code>insert</code>和<code>get</code>。这两种操作都不是异步的，所以我们使用<code>Mutex</code>。</p>
+<p>下一章将会介绍后一种方法。</p>
+<h1 id="添加bytes依赖"><a class="header" href="#添加bytes依赖">添加<code>bytes</code>依赖</a></h1>
+<p>Mini-Redis 不用<code>Vec&lt;u8&gt;</code>，而是使用<a href="https://docs.rs/bytes/1/bytes/struct.Bytes.html">bytes</a>库中的<code>Bytes</code>类型。<code>Bytes</code>的目标是为网络编程提供一种健壮的(robust)字节数组结构。它比较<code>Vec&lt;u8&gt;</code>添加的最大的特性就是浅克隆(shallow cloning)。换句话说，在<code>Bytes</code>实例上调用<code>clone()</code>不会导致底层数据被复制。相反的，<code>Bytes</code>实例是某些底层数据的引用计数(reference-counted)。<code>Bytes</code>大概是<code>Arc&lt;Vec&lt;u8&gt;&gt;</code>，但有些额外功能。</p>
+<p>添加<code>bytes</code>库，需要在<code>Cargo.toml</code>中的<code>[dependencies]</code>添加：</p>
+<pre><code class="language-toml">bytes = "1"
+</code></pre>
+<h1 id="初始化hashmap"><a class="header" href="#初始化hashmap">初始化<code>HashMap</code></a></h1>
+<p><code>HashMap</code>将会在很多任务和潜在的许多线程中共享。为了支持这一点，需要包装在<code>Arc&lt;Mutex&lt;_&gt;&gt;</code>中。</p>
+<p>首先，为了方便，在<code>use</code>语句后面添加一个类型别名。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use bytes::Bytes;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+type Db = Arc&lt;Mutex&lt;HashMap&lt;String, Bytes&gt;&gt;&gt;;
+<span class="boring">}</span></code></pre></pre>
+<p>然后，更新<code>main</code>函数来初始化<code>HashMap</code>，并且把<code>Arc</code>**句柄(handle)**传递给<code>process</code>函数。使用<code>Arc</code>允许<code>Hashmap</code>在很多任务中被引用，而这些任务可能运行在很多线程上。在整个 Tokio 中，术语句柄(handle)用来指代提供对某些共享状态访问权限的引用值。</p>
+<pre><pre class="playground"><code class="language-rust">use tokio::net::TcpListener;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+#[tokio::main]
+async fn main() {
+    let listener = TcpListener::bind("127.0.0.1:6379").await.unwrap();
+
+    println!("Listening");
+
+    let db = Arc::new(Mutex::new(HashMap::new()));
+
+    loop {
+        let (socket, _) = listener.accept().await.unwrap();
+        // Clone the handle to the hash map.
+        let db = db.clone();
+
+        println!("Accepted");
+        tokio::spawn(async move {
+            process(socket, db).await;
+        });
+    }
+}</code></pre></pre>
+<h1 id="关于使用stdsyncmutex"><a class="header" href="#关于使用stdsyncmutex">关于使用<code>std::sync::Mutex</code></a></h1>
+<p>注意，使用<code>std::sync::Mutex</code>而<strong>不是</strong><code>tokio::sync::Mutex</code>来守卫(guard)<code>HashMap</code>。一个常见的错误，是在异步代码中全都用<code>tokio::sync::Mutex</code>。异步互斥体(async mutex)是在调用<code>.await</code>时锁定(locked)的互斥体。</p>
+<p>同步互斥体(sync mutex)会在等待请求锁(lock)时，阻塞当前线程。这样的话，将会阻止其他任务的处理。但是，使用<code>tokio::sync::Mutex</code>也没啥用。因为异步互斥体内部使用了同步互斥体。</p>
+<p>根据经验，只要数据竞争保持在较低水平并且调用<code>.await</code>没有持有锁，就可以在异步代码中使用同步互斥体。</p>
+<h1 id="更新process"><a class="header" href="#更新process">更新<code>process()</code></a></h1>
+<p>process 函数不再初始化<code>Hashmap</code>。相反，它会使用<code>HashMap</code>的共享句柄来作为参数。当然在使用之前，也需要先给<code>HashMap</code>上锁。记住<code>HashMap</code>的 value 类型现在是<code>Bytes</code>（可以廉价地克隆），所以这个也得改。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use tokio::net::TcpStream;
+use mini_redis::{Connection, Frame};
+
+async fn process(socket: TcpStream, db: Db) {
+    use mini_redis::Command::{self, Get, Set};
+
+    // 由 `mini-redis` 提供的 Connection ，处理解析从套接字传过来的帧
+    // (handles parsing frames from the socket)
+    let mut connection = Connection::new(socket);
+
+    while let Some(frame) = connection.read_frame().await.unwrap() {
+        let response = match Command::from_frame(frame).unwrap() {
+            Set(cmd) =&gt; {
+                let mut db = db.lock().unwrap();
+                db.insert(cmd.key().to_string(), cmd.value().clone());
+                Frame::Simple("OK".to_string())
+            }
+            Get(cmd) =&gt; {
+                let db = db.lock().unwrap();
+                if let Some(value) = db.get(cmd.key()) {
+                    Frame::Bulk(value.clone())
+                } else {
+                    Frame::Null
+                }
+            }
+            cmd =&gt; panic!("unimplemented {:?}", cmd),
+        };
+
+        // 写回响应，传回给客户端
+        connection.write_frame(&amp;response).await.unwrap();
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h1 id="任务线程以及数据竞争"><a class="header" href="#任务线程以及数据竞争">任务，线程，以及数据竞争</a></h1>
+<p>当数据竞争最少时，使用阻塞互斥锁(blocking mutex)来守卫(guard)较小的临界区(short critical sections)是可被接受的。当锁被争用时，执行任务的线程必须阻塞，并等待互斥体解锁。这不仅仅会阻塞当前任务，也同样会阻塞这个线程上调度的其他所有任务。</p>
+<p>默认情况下，Tokio 运行时使用多线程调度器。任务会被<em>运行时</em>的调度器调度到任意数量的线程上。如果大量的任务都调度执行，并且它们都需要访问同一个互斥体，就会出现数据竞争。另一方面，如果 Tokio 使用<a href="https://docs.rs/tokio/1/tokio/runtime/index.html#current-thread-scheduler"><code>current_thread</code></a>运行时（当前线程运行时），那么互斥体将永远不会发生争用。</p>
+<blockquote>
+<p><strong>info</strong> &gt; <a href="https://docs.rs/tokio/1/tokio/runtime/struct.Builder.html#method.new_current_thread"><code>current_thread</code>运行时</a>是一个轻量化的，单线程的运行时。当仅生成少量任务并且打开少量套接字(socket)时，这是个好选择。例如，当提供一个同步 API 桥(synchronous API bridge)在异步客户端库之上，这个选择运行效果很好。</p>
+</blockquote>
+<p>如果同步互斥锁上的数据竞争成为问题，那么最好的结局方法并不是切换到 Tokio 互斥锁。考虑下面的选择：</p>
+<ul>
+<li>使用一个专用任务，来管理状态，并使用消息传递。</li>
+<li>对互斥体分片。</li>
+<li>重构代码，来避免互斥体。</li>
+</ul>
+<p>在我们的例子中，由于每个键都是独立的，所以把互斥体分片(mutex sharding)效果很好。为此，我们将引入<code>N</code>个不同的实例，而不是使用单个<code>Mutex&lt;HashMap&lt;_, _&gt;&gt;</code>。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>type ShardedDb = Arc&lt;Vec&lt;Mutex&lt;HashMap&lt;String, Vec&lt;u8&gt;&gt;&gt;&gt;&gt;;
+
+fn new_sharded_db(num_shards: usize) -&gt; ShardedDb {
+    let mut db = Vec::with_capacity(num_shards);
+    for _ in 0..num_shards {
+        db.push(Mutex::new(HashMap::new()));
+    }
+    Arc::new(db)
+}
+<span class="boring">}</span></code></pre></pre>
+<p>然后呢，找到给定的 key 对应的值就变成了两步操作。首先，key 用来识别它属于哪一个分片。然后，在<code>HashMap</code>中查找 key。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let shard = db[hash(key) % db.len()].lock().unwrap();
+shard.insert(key, value);
+<span class="boring">}</span></code></pre></pre>
+<p>上面说的简单实现需要使用固定数量的分片，并且一旦创建分片 map，分片的数量就不能更改了。<a href="https://docs.rs/dashmap"><code>dashmap</code></a>提供了更复杂的分片哈希图(hash map)的实现。</p>
+<h1 id="在调用await时持有mutexguard"><a class="header" href="#在调用await时持有mutexguard">在调用<code>.await</code>时持有<code>MutexGuard</code></a></h1>
+<p>你可能像这样写代码：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use std::sync::{Mutex, MutexGuard};
+
+async fn increment_and_do_stuff(mutex: &amp;Mutex&lt;i32&gt;) {
+    let mut lock: MutexGuard&lt;i32&gt; = mutex.lock().unwrap();
+    *lock += 1;
+
+    do_something_async().await;
+} // 锁在此离开了作用域
+<span class="boring">}</span></code></pre></pre>
+<p>当你尝试调用此函数时，你会遇到以下错误信息：</p>
+<pre><code>error: future cannot be sent between threads safely
+   --&gt; src/lib.rs:13:5
+    |
+13  |     tokio::spawn(async move {
+    |     ^^^^^^^^^^^^ future created by async block is not `Send`
+    |
+   ::: /playground/.cargo/registry/src/github.com-1ecc6299db9ec823/tokio-0.2.21/src/task/spawn.rs:127:21
+    |
+127 |         T: Future + Send + 'static,
+    |                     ---- required by this bound in `tokio::task::spawn::spawn`
+    |
+    = help: within `impl std::future::Future`, the trait `std::marker::Send` is not implemented for `std::sync::MutexGuard&lt;'_, i32&gt;`
+note: future is not `Send` as this value is used across an await
+   --&gt; src/lib.rs:7:5
+    |
+4   |     let mut lock: MutexGuard&lt;i32&gt; = mutex.lock().unwrap();
+    |         -------- has type `std::sync::MutexGuard&lt;'_, i32&gt;` which is not `Send`
+...
+7   |     do_something_async().await;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ await occurs here, with `mut lock` maybe used later
+8   | }
+    | - `mut lock` is later dropped here
+</code></pre>
+<p>这是因为<code>std::sync::MutexGuard</code>类型<strong>不是</strong><code>Send</code>的。这意味着你不能发送(send)一个互斥锁到另外一个线程，这会报错，原因是 Tokio 运行时可以在任务调用<code>.await</code>时，在线程间移动它。为了避免这种情况，你应该重构代码，在调用<code>.await</code>之间，互斥锁就析构掉。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// 这样是正确的！
+async fn increment_and_do_stuff(mutex: &amp;Mutex&lt;i32&gt;) {
+    {
+        let mut lock: MutexGuard&lt;i32&gt; = mutex.lock().unwrap();
+        *lock += 1;
+    } // 锁在此离开了作用域
+
+    do_something_async().await;
+}
+<span class="boring">}</span></code></pre></pre>
+<p>注意，这样不行：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use std::sync::{Mutex, MutexGuard};
+
+// This fails too.
+async fn increment_and_do_stuff(mutex: &amp;Mutex&lt;i32&gt;) {
+    let mut lock: MutexGuard&lt;i32&gt; = mutex.lock().unwrap();
+    *lock += 1;
+    drop(lock);
+
+    do_something_async().await;
+}
+<span class="boring">}</span></code></pre></pre>
+<p>这是因为编译器当前只能根据作用域来判断 future 是否是<code>Send</code>的。希望编译器之后能更新，来支持显式 drop，但是现在不行，必须使用作用域。</p>
+<p>注意，此处讨论的错误在<a href="https://tokio.rs/tokio/tutorial/spawning#send-bound">Spawning 章节的 Send bound 部分</a>也讨论了。</p>
+<p>你不该尝试生成不需要<code>Send</code>的任务来规避这个问题，因为如果 Tokio 在<code>.await</code>初挂起你的任务，同时这个任务持有锁，一些其他的任务可能被调度到相同的线程上，然后这些其他任务或许也会尝试锁定这个互斥体(lock that mutex)，这可能导致死锁(deadlock)，因为等待锁定互斥体的任务将阻止持有互斥锁的任务释放这个互斥锁(releasing the mutex)。</p>
+<p>我们将讨论一些如何修复以下错误信息的方法：</p>
+<h2 id="重构代码让它不跨await持有锁"><a class="header" href="#重构代码让它不跨await持有锁">重构代码，让它不跨<code>.await</code>持有锁</a></h2>
+<p>我们已经在上面代码片段中看到了一个例子，但是我们还有更强大的方法可以做到这一点。例如，你可以把互斥锁包装在结构体中，并且仅在该结构体的非异步方法内来给互斥体上锁。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use std::sync::Mutex;
+
+struct CanIncrement {
+    mutex: Mutex&lt;i32&gt;,
+}
+impl CanIncrement {
+    // This function is not marked async.
+    fn increment(&amp;self) {
+        let mut lock = self.mutex.lock().unwrap();
+        *lock += 1;
+    }
+}
+
+async fn increment_and_do_stuff(can_incr: &amp;CanIncrement) {
+    can_incr.increment();
+    do_something_async().await;
+}
+<span class="boring">}</span></code></pre></pre>
+<p>这种模式可以保证你不会遇到<code>Send</code>错误，因为互斥锁守卫(mutex guard)没有出现在异步函数中的任何位置。</p>
+<h2 id="生成一个任务来管理状态使用消息传递来操作它"><a class="header" href="#生成一个任务来管理状态使用消息传递来操作它">生成一个任务，来管理状态，使用消息传递来操作它</a></h2>
+<p>这是本章节开头提到的第二种方法，当在 I/O 资源中共享资源时很常用。参阅下一章节了解更多细节。</p>
+<h2 id="使用-tokio-提供的异步互斥体"><a class="header" href="#使用-tokio-提供的异步互斥体">使用 Tokio 提供的异步互斥体</a></h2>
+<p>也可以用 Tokio 提供的<code>tokio::sync::Mutex</code>类型。Tokio 互斥锁主要功能就是它可以在调用<code>.await</code>时保持，不会出现其他问题。另外提一下，异步互斥体(asynchronous mutex)比普通的互斥体(ordinary mutex)更昂贵（在时间空间上），所以通常最好使用其他两种方法。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use tokio::sync::Mutex; // 注意！这里使用了 Tokio mutex
+
+// 这可以过编译！
+// （但是这种情况重构代码可能更好）
+async fn increment_and_do_stuff(mutex: &amp;Mutex&lt;i32&gt;) {
+    let mut lock = mutex.lock().await;
+    *lock += 1;
+
+    do_something_async().await;
+} // 锁在此离开了作用域
+<span class="boring">}</span></code></pre></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="Spawning.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="Channels.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="Spawning.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="Channels.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

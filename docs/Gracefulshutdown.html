@@ -1,0 +1,345 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Graceful shutdown 如何优雅地结束程序 - Mini Redis Tokio Tutorial 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="Intro.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Overview.html"><strong aria-hidden="true">1.1.</strong> Overview 概览</a></li><li class="chapter-item expanded "><a href="Setup.html"><strong aria-hidden="true">1.2.</strong> Setup 准备工作</a></li><li class="chapter-item expanded "><a href="HelloTokio.html"><strong aria-hidden="true">1.3.</strong> Hello Tokio 你好 Tokio</a></li><li class="chapter-item expanded "><a href="Spawning.html"><strong aria-hidden="true">1.4.</strong> Spawning 生成任务</a></li><li class="chapter-item expanded "><a href="Sharedstate.html"><strong aria-hidden="true">1.5.</strong> Shared state 共享状态</a></li><li class="chapter-item expanded "><a href="Channels.html"><strong aria-hidden="true">1.6.</strong> Channels 管道</a></li><li class="chapter-item expanded "><a href="IO.html"><strong aria-hidden="true">1.7.</strong> I/O</a></li><li class="chapter-item expanded "><a href="Framing.html"><strong aria-hidden="true">1.8.</strong> Framing 解析帧</a></li><li class="chapter-item expanded "><a href="Asyncindepth.html"><strong aria-hidden="true">1.9.</strong> Async in depth 深入异步</a></li><li class="chapter-item expanded "><a href="Select.html"><strong aria-hidden="true">1.10.</strong> Select 选择先完成的</a></li><li class="chapter-item expanded "><a href="Streams.html"><strong aria-hidden="true">1.11.</strong> Streams 流</a></li></ol></li><li class="chapter-item expanded "><a href="Topics.html"><strong aria-hidden="true">2.</strong> Topics 其他主题</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Bridgingwithsynccode.html"><strong aria-hidden="true">2.1.</strong> Bridging with sync code 异步与同步代码共存</a></li><li class="chapter-item expanded "><a href="Gracefulshutdown.html" class="active"><strong aria-hidden="true">2.2.</strong> Graceful shutdown 如何优雅地结束程序</a></li><li class="chapter-item expanded "><a href="Tracing.html"><strong aria-hidden="true">2.3.</strong> Getting started with Tracing 开始使用Tracing日志</a></li><li class="chapter-item expanded "><a href="TracingNext.html"><strong aria-hidden="true">2.4.</strong> Next steps with Tracing 更进一步使用Tracing日志</a></li><li class="chapter-item expanded "><a href="UnitTesting.html"><strong aria-hidden="true">2.5.</strong> Unit Testing 单元测试</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Mini Redis Tokio Tutorial 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="graceful-shutdown-如何优雅地结束程序"><a class="header" href="#graceful-shutdown-如何优雅地结束程序">Graceful shutdown 如何优雅地结束程序</a></h1>
+<p>这一页的目的是概述如何在异步应用中正确地关闭程序。</p>
+<p>实现优雅地结束程序分为三部分：</p>
+<ul>
+<li>搞明白何时关闭</li>
+<li>告知程序每一部分程序关闭</li>
+<li>等待应用其他部分关闭</li>
+</ul>
+<p>本文其余部分将介绍这些。此处描述的方法实现可以在<a href="https://github.com/tokio-rs/mini-redis/">mini-redis</a>中找到，尤其是<a href="https://github.com/tokio-rs/mini-redis/blob/master/src/server.rs"><code>src/server.rs</code></a>和<a href="https://github.com/tokio-rs/mini-redis/blob/master/src/shutdown.rs"><code>src/shutdown.rs</code></a>文件中。</p>
+<h2 id="搞清何时关闭"><a class="header" href="#搞清何时关闭">搞清何时关闭</a></h2>
+<p>这取决于应用程序，当应用接收到从操作系统的信号是一种常见的关闭情况。这种情况会发生，比如当你程序运行时在终端中按下 ctrl+c 时。为了检测这种，Tokio 提供了一个<a href="https://docs.rs/tokio/1/tokio/signal/fn.ctrl_c.html"><code>tokio::signal::ctrl_c</code></a>函数，该函数会休眠，直到收到这样的信号。你可以这样使用它：</p>
+<pre><pre class="playground"><code class="language-rust">use tokio::signal;
+
+#[tokio::main]
+async fn main() {
+    // ... 在单独的任务上生成应用 ...
+
+    match signal::ctrl_c().await {
+        Ok(()) =&gt; {},
+        Err(err) =&gt; {
+            eprintln!("Unable to listen for shutdown signal: {}", err);
+            // 当发生 error 我们也结束程序
+        },
+    }
+
+    // 向应用发送关机信号，并等待
+}</code></pre></pre>
+<p>如果你有多钟关闭条件，你可以使用<a href="https://docs.rs/tokio/1/tokio/sync/mpsc/index.html">mpsc 管道</a>来发送关机信号到某个地方。你可以在<a href="https://docs.rs/tokio/1/tokio/signal/fn.ctrl_c.html"><code>ctrl_c</code></a>和管道之间进行<a href="https://docs.rs/tokio/1/tokio/macro.select.html">选择</a>，例如：</p>
+<pre><pre class="playground"><code class="language-rust">use tokio::signal;
+use tokio::sync::mpsc;
+
+#[tokio::main]
+async fn main() {
+    let (shutdown_send, mut shutdown_recv) = mpsc::unbounded_channel();
+
+    // ... 在单独的任务上生成应用 ...
+    //
+    // 只要从程序内部发出了关闭信号，应用使用 shutdown_send
+
+    tokio::select! {
+        _ = signal::ctrl_c() =&gt; {},
+        _ = shutdown_recv.recv() =&gt; {},
+    }
+
+    // 向应用发送关机信号，并等待
+}</code></pre></pre>
+<h2 id="告知程序每一部分程序关闭"><a class="header" href="#告知程序每一部分程序关闭">告知程序每一部分程序关闭</a></h2>
+<p>当你想要告知更多任务来关闭，你可以使用<a href="https://docs.rs/tokio-util/latest/tokio_util/sync/struct.CancellationToken.html">Cancellation Tokens</a>。这些 token 允许你来通知任务，它们需要终止它们自己来响应这个取消请求，从而轻松实现正常关闭。</p>
+<p>为了在数个任务之间共享<code>CancellationToken</code>，你需要克隆它。这是由于单一的所有权规则要求每一个值只能有一个所有者。当克隆一个 token，你会得到一个与原来 token 一样的 token；如果其中一个取消了，那么其他的也会取消。你可以克隆你需要那么多数量的 token，并当你在其中一个 token 上调用<code>cnacel</code>，它们全部都会被取消掉。</p>
+<p>这里是在多个任务中使用<code>CancellationToken</code>的步骤：</p>
+<ol>
+<li>首先，创建新的<code>CancellationToken</code>。</li>
+<li>然后，通过<code>clone</code>方法创建<code>CancellationToken</code>的克隆。这会创建新的 token 并可以用于其他任务上。</li>
+<li>传递原始或者克隆的 token 到应该响应取消请求的任务上。</li>
+<li>当你想要优雅地关闭任务时，在原始或者克隆的 token 上调用<code>cancel</code>方法。任何任务侦测到从原始或克隆的 token 上的取消请求，将会被通知关闭。</li>
+</ol>
+<p>这里是上述方法步骤的代码片段：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Step 1: Create a new CancellationToken
+let token = CancellationToken::new();
+
+// Step 2: Clone the token for use in another task
+let cloned_token = token.clone();
+
+// Task 1 - Wait for token cancellation or a long time
+let task1_handle = tokio::spawn(async move {
+    tokio::select! {
+        // Step 3: Using cloned token to listen to cancellation requests
+        _ = cloned_token.cancelled() =&gt; {
+            // The token was cancelled, task can shut down
+        }
+        _ = tokio::time::sleep(std::time::Duration::from_secs(9999)) =&gt; {
+            // Long work has completed
+        }
+    }
+});
+
+// Task 2 - Cancel the original token after a small delay
+tokio::spawn(async move {
+    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+
+    // Step 4: Cancel the original or cloned token to notify other tasks about shutting down gracefully
+    token.cancel();
+});
+
+// Wait for tasks to complete
+task1_handle.await.unwrap()
+<span class="boring">}</span></code></pre></pre>
+<p>当使用 Cancellation Token，你不必在 token 取消时立刻去关闭任务。相反，您可以在终止任务之前运行关机流程，比如刷新数据到一个文件或者数据库中，或发送一个关闭消息到一个连接中。</p>
+<h2 id="等待应用其他部分关闭"><a class="header" href="#等待应用其他部分关闭">等待应用其他部分关闭</a></h2>
+<p>一旦您告知任务关闭，你需要等待它们完成关机流程。一个简单的方法是使用<a href="https://docs.rs/tokio-util/latest/tokio_util/task/task_tracker">任务追踪(task tracker)</a>。一个任务追踪器是任务的集合。任务追踪器的<a href="https://docs.rs/tokio-util/latest/tokio_util/task/task_tracker/struct.TaskTracker.html#method.wait"><code>wait</code></a>方法提供了一个 future，只有在所有任务的 future 都已经解析，<strong>并</strong>任务追踪器已经关闭后，才会进行解析。</p>
+<p>下面的示例会生成 10 个任务，然后使用任务追踪器来等待它们关机。</p>
+<pre><pre class="playground"><code class="language-rust">use std::time::Duration;
+use tokio::time::sleep;
+use tokio_util::task::TaskTracker;
+
+#[tokio::main]
+async fn main() {
+    let tracker = TaskTracker::new();
+
+    for i in 0..10 {
+        tracker.spawn(some_operation(i));
+    }
+
+    // 一旦我们已经生成了所有任务，我们关闭追踪器。
+    tracker.close();
+
+    // 等待所有任务完成。
+    tracker.wait().await;
+
+    println!("This is printed after all of the tasks.");
+}
+
+async fn some_operation(i: u64) {
+    sleep(Duration::from_millis(100 * i)).await;
+    println!("Task {} shutting down.", i);
+}</code></pre></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="Bridgingwithsynccode.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="Tracing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="Bridgingwithsynccode.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="Tracing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

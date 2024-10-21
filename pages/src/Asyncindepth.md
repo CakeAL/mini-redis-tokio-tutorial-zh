@@ -95,7 +95,7 @@ async fn main() {
 
 ## 异步函数作为 Future
 
-在 main 函数中，我们示例化了 future，并在其上调用`.await`。异步函数中，我们可以对任何实现了`Future`的值调用`.await`。确实，调用`异步`函数本就会返回一个实现了`Future`的匿名类型。`async fn main()`其实就会大致生成下面这样：
+在 main 函数中，我们实例化了 future，并在其上调用`.await`。异步函数中，我们可以对任何实现了`Future`的值调用`.await`。确实，调用`异步`函数本就会返回一个实现了`Future`的匿名类型。`async fn main()`其实就会大致生成下面这样：
 
 ```rust
 use std::future::Future;
@@ -149,7 +149,7 @@ impl Future for MainFuture {
 }
 ```
 
-Rust future 是个**状态机**。这里，`MainFuture`枚举表示未来可能发生的状态。Future 开始于`State0`状态。当调用`poll`时，future 会尽可能尝试推进其他内部状态。如果 future 能够完成，返回`Poll:Ready`，其中包含着该异步计算的输出。
+Rust future 是个**状态机**。这里，`MainFuture`枚举表示未来可能发生的状态。Future 开始于`State0`状态。当调用`poll`时，future 会尽可能尝试推进其内部状态。如果 future 能够完成，返回`Poll:Ready`，其中包含着该异步计算的输出。
 
 如果 future 无法完成，通常是由于它正在等待未准备好的资源，则返回`Poll::Pending`。接收到`Poll::Pending`后，向调用者表明 future 会在稍后完成，调用者应该稍后再调用`poll`。
 
@@ -157,14 +157,13 @@ Rust future 是个**状态机**。这里，`MainFuture`枚举表示未来可能�
 
 # 执行器 Executors
 
-异步 Rust 函数返回 future。Future 必须调用`poll`来推进它们的状态。Future都是由future组成的。那么问题是，谁来对最深层的future调用`poll`呢？
+异步 Rust 函数返回 future。Future 必须调用`poll`来推进它们的状态。Future 都是由 future 组成的。那么问题是，谁来对最深层的 future 调用`poll`呢？
 
-回想刚才的内容，要运行异步函数，不是传递给`tokio::spawn`，就是在main函数上加上`#[tokio::main]`注解。这可以让外部生成的future提交给Tokio的执行器。执行器负责在外部future上调用`Future::poll`，来驱动着异步计算完成。
+回想刚才的内容，要运行异步函数，不是传递给`tokio::spawn`，就是在 main 函数上加上`#[tokio::main]`注解。这可以让外部生成的 future 提交给 Tokio 的执行器。执行器负责在外部 future 上调用`Future::poll`，来驱动着异步计算完成。
 
 ## Mini Tokio
 
-
-为了更好理解他们是怎么组合到一起的，让我们实现我们自己的最小化的Tokio版本！完整代码可以在[这儿](https://github.com/tokio-rs/website/blob/master/tutorial-code/mini-tokio/src/main.rs)找到。
+为了更好理解他们是怎么组合到一起的，让我们实现我们自己的最小化的 Tokio 版本！完整代码可以在[这儿](https://github.com/tokio-rs/website/blob/master/tutorial-code/mini-tokio/src/main.rs)找到。
 
 ```rust
 use std::collections::VecDeque;
@@ -222,17 +221,18 @@ impl MiniTokio {
 }
 ```
 
-这可以运行异步块。创建了一个`Delay`实例用于等待所需时间。然而，我们的实现存在一个重大**缺陷**。我们的执行器永远不会休眠。执行器持续不断地用循环轮询**所有的**生成的future。但大多数时候，future还没准备好做更多工作，然后又返回了`Poll::Pending`。这个过程会消耗CPU周期，降低效率。
+这可以运行异步块。创建了一个`Delay`实例用于等待所需时间。然而，我们的实现存在一个重大**缺陷**。我们的执行器永远不会休眠。执行器持续不断地用循环轮询**所有的**生成的 future。但大多数时候，future 还没准备好做更多工作，然后又返回了`Poll::Pending`。这个过程会消耗 CPU 周期，降低效率。
 
-理想情况下，我们想要mini-tokio只在future有进展的时候来轮询一下future。当任务需要的被阻塞的资源，转变为可以为请求使用时，就应该轮询一下。比如任务想从TCP套接字中读取数据，我们只想让它在TCP套接字接收到数据时轮询任务。在上述代码中，任务在给定`Instant`(时刻)之前被阻塞。理想状况下，mini-tokio应该只在这个时刻后来轮询任务。
+理想情况下，我们想要 mini-tokio 只在 future 有进展的时候来轮询一下 future。当任务需要的被阻塞的资源，转变为可以为请求使用时，就应该轮询一下。比如任务想从 TCP 套接字中读取数据，我们只想让它在 TCP 套接字接收到数据时轮询任务。在上述代码中，任务在给定`Instant`(时刻)之前被阻塞。理想状况下，mini-tokio 应该只在这个时刻后来轮询任务。
 
 为了实现这一点，当资源被轮询时，发现资源并没有准备好。一旦资源处于就绪状态，应该发送一个提醒。
 
 # 唤醒者 Wakers
 
-我们之前缺失了wakers。这是当一个资源能够通知正在等待中的任务资源已就绪，可以继续操作的系统。
+我们之前缺失了 wakers。这是一个当资源准备好继续某些操作时，来通知正在等待的任务的系统。
 
 让我们再看一下`Future::poll`的定义：
+
 ```rust
 fn poll(self: Pin<&mut Self>, cx: &mut Context)
     -> Poll<Self::Output>;
@@ -242,7 +242,7 @@ fn poll(self: Pin<&mut Self>, cx: &mut Context)
 
 ## 更新`Delay`的实现
 
-我们可以使用wakers来更新`Delay`：
+我们可以使用 wakers 来更新`Delay`：
 
 ```rust
 use std::future::Future;
@@ -286,15 +286,15 @@ impl Future for Delay {
 }
 ```
 
-现在，经过了请求的时间，调用任务就会被通知，然后执行器可以确保该任务再次被调用。下一步就是更新mini-tokio，来坚挺唤醒通知(wake notifications)。
+现在，经过了请求的时间，调用任务就会被通知，然后执行器可以确保该任务再次被调用。下一步就是更新 mini-tokio，来坚挺唤醒通知(wake notifications)。
 
 这里我们的`Delay`实现还是有点问题。我们一会儿再修复。
 
 > **warning**
-> 当一个future返回`Poll::Pending`时，它**必须**保证waker之后某时可以正常被调用。如果忘了这样做，会导致任务被无限期挂起。 \
-> 返回`Poll::Pending`后，忘记唤醒任务是常见的bug。
+> 当一个 future 返回`Poll::Pending`时，它**必须**保证 waker 之后某时可以正常被调用。如果忘了这样做，会导致任务被无限期挂起。 \
+> 返回`Poll::Pending`后，忘记唤醒任务是常见的 bug。
 
-回想一下我们第一次写的`Delay`。这是future的实现：
+回想一下我们第一次写的`Delay`。这是 future 的实现：
 
 ```rust
 impl Future for Delay {
@@ -315,21 +315,22 @@ impl Future for Delay {
 }
 ```
 
-在返回`Poll::Pending`之前，我们调用了`cx.waker().wake_by_ref()`。这是为了满足future的定义。通过返回`Poll::Pending`，我们可以向waker发出信号。因为我们还没实现定时器线程，所以我们内联地向waker发出信号。这样做会让future立刻被重新安排执行，但是这个future很可能此时并没有准备好去完成。
+在返回`Poll::Pending`之前，我们调用了`cx.waker().wake_by_ref()`。这是为了满足 future 的定义。通过返回`Poll::Pending`，我们可以向 waker 发出信号。因为我们还没实现定时器线程，所以我们内联地向 waker 发出信号。这样做会让 future 立刻被重新安排执行，但是这个 future 很可能此时并没有准备好去完成。
 
-注意你可以让不必要地向waker发出更多信号。在本例中，即使我们还没准备好继续操作，我们也会向waker发出信号。除了浪费CPU周期之外没毛病。但是，这种特定的实现会导致忙循环(busy loop)。
+注意你可以让不必要地向 waker 发出更多信号。在本例中，即使我们还没准备好继续操作，我们也会向 waker 发出信号。除了浪费 CPU 周期之外没毛病。但是，这种特定的实现会导致忙循环(busy loop)。
 
-## 更新Mini Tokio代码
+## 更新 Mini Tokio 代码
 
-接下来是更新Mini Tokio来接收waker通知。我们只想让任务被唤醒时来执行任务，为此，Mini Tokio将提供自己的waker。当调用waker，关联的任务就会被执行。Mini-Tokio对future轮询时，会把waker传递给future。
+接下来是更新 Mini Tokio 来接收 waker 通知。我们只想让任务被唤醒时来执行任务，为此，Mini Tokio 将提供自己的 waker。当调用 waker，关联的任务就会被执行。Mini-Tokio 对 future 轮询时，会把 waker 传递给 future。
 
-更新后的Mini Tokio会使用管道来存储计划执行的任务队列。管道可以让任务排队执行在任何线程上。Waker必须实现了`Send`和`Sync`。
+更新后的 Mini Tokio 会使用管道来存储计划执行的任务队列。管道可以让任务排队执行在任何线程上。Waker 必须实现了`Send`和`Sync`。
 
 > **info**  
-> `Send`和`Sync`是Rust提供关于并发的trait。可以**发送**到不同线程的类型是`Send`的。大多数类型都是`Send`的，但是像`Rc`这样的就不是。可以通过不可变引用**并发**访问的类型是`Sync`的。类型可以是`Send`但不是`Sync`——一个很好的例子是[`Cell`](https://doc.rust-lang.org/std/cell/struct.Cell.html)，它可以通过不可变引用进行修改，这在并发访问是不安全的。 \
-> 了解更多细节，可以看[Rust book中这一章节](https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html)。
+> `Send`和`Sync`是 Rust 提供关于并发的 trait。可以**发送**到不同线程的类型是`Send`的。大多数类型都是`Send`的，但是像`Rc`这样的就不是。可以通过不可变引用**并发**访问的类型是`Sync`的。类型可以是`Send`但不是`Sync`——一个很好的例子是[`Cell`](https://doc.rust-lang.org/std/cell/struct.Cell.html)，它可以通过不可变引用进行修改，这在并发访问是不安全的。 \
+> 了解更多细节，可以看[Rust book 中这一章节](https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html)。
 
-更新MiniTokio结构体。
+更新 MiniTokio 结构体。
+
 ```rust
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -344,7 +345,7 @@ struct Task {
 }
 ```
 
-Waker是`Sync`的，并且可以被克隆。当调用`wake`时，任务必须被安排执行。为了实现，我们需要有个管道。当我们调用`wake()`时，任务被发送到管道。我们的`Task`结构体将实现唤醒逻辑。为此，它需要包含生成的future和管道的发送部分。我们把`Poll`枚举和future都放在`TaskFuture`结构体中，以跟踪最新的`Future::poll()`结果，这是处理虚假唤醒(spurious wake-ups)所须的。更多细节在`TaskFuture`的`poll()`中实现。
+Waker 是`Sync`的，并且可以被克隆。当调用`wake`时，任务必须被安排执行。为了实现，我们需要有个管道。当我们调用`wake()`时，任务被发送到管道。我们的`Task`结构体将实现唤醒逻辑。为此，它需要包含生成的 future 和管道的发送部分。我们把`Poll`枚举和 future 都放在`TaskFuture`结构体中，以跟踪最新的`Future::poll()`结果，这是处理虚假唤醒(spurious wake-ups)所须的。更多细节在`TaskFuture`的`poll()`中实现。
 
 ```rust
 use std::sync::{Arc, Mutex};
@@ -372,7 +373,7 @@ impl Task {
 }
 ```
 
-为了安排任务，`Arc`被克隆并通过管道发送。现在，我们需要把`调度`函数和[`std::task::Waker`](https://doc.rust-lang.org/std/task/struct.Waker.html)挂钩(hook)。标准库提供了一个低等级API，使用[manual vtable construction](https://doc.rust-lang.org/std/task/struct.RawWakerVTable.html)(手动虚表结构)。这种策略为实现者提供了最大化的灵活性，但是需要一堆unsafe的样板代码。我们将使用[`futures`](https://docs.rs/futures/)crate提供的[`ArcWake`](https://docs.rs/futures/0.3/futures/task/trait.ArcWake.html)工具，而不是直接使用[`RawVakerVTable`](https://doc.rust-lang.org/std/task/struct.RawWakerVTable.html)。这使得我们可以实现一个简单的trait就能暴露我们的`Task`结构体作为一个waker。
+为了安排任务，`Arc`被克隆并通过管道发送。现在，我们需要把`调度`函数和[`std::task::Waker`](https://doc.rust-lang.org/std/task/struct.Waker.html)挂钩(hook)。标准库提供了一个低等级 API，使用[manual vtable construction](https://doc.rust-lang.org/std/task/struct.RawWakerVTable.html)(手动虚表结构)。这种策略为实现者提供了最大化的灵活性，但是需要一堆 unsafe 的样板代码。我们将使用[`futures`](https://docs.rs/futures/)crate 提供的[`ArcWake`](https://docs.rs/futures/0.3/futures/task/trait.ArcWake.html)工具，而不是直接使用[`RawVakerVTable`](https://doc.rust-lang.org/std/task/struct.RawWakerVTable.html)。这使得我们可以实现一个简单的 trait 就能暴露我们的`Task`结构体作为一个 waker。
 
 添加以下依赖到`Cargo.toml`中来拉取`futures`。
 
@@ -476,22 +477,22 @@ impl Task {
 
 此外，`MiniTokio::new()`和`MiniTokio::spawn()`函数也被调整为使用管道，而不是一个`VecDeque`。当新任务生成时，他们会获取管道发送者的克隆，这让任务可以在运行时上调度自己。
 
-`Task::poll()`函数使用`futures`crate的[`ArcWake`](https://docs.rs/futures/0.3/futures/task/trait.ArcWake.html)创建了waker。这个waker被用来创建`task::Context`的，它会被传递到`poll`。
+`Task::poll()`函数使用`futures`crate 的[`ArcWake`](https://docs.rs/futures/0.3/futures/task/trait.ArcWake.html)创建了 waker。这个 waker 被用来创建`task::Context`的，它会被传递到`poll`。
 
 # 总结
 
-我们已经看到异步Rust如何端对端地工作。Rust的`async/await`功能是由trait提供的。这让第三方crate，比如Tokio，提供执行的相关细节。
+我们已经看到异步 Rust 如何端对端地工作。Rust 的`async/await`功能是由 trait 提供的。这让第三方 crate，比如 Tokio，提供执行的相关细节。
 
-- 异步Rust操作是惰性的，需要调用者轮询它们。
-- Waker被传递给future，把future与调用的任务联系起来。
-- 当资源**未**就绪去完成操作，返回`Poll::Pending`并记录任务的waker。
-- 当资源就绪，任务的waker会收到通知。
-- 当执行器收到通道，就会安排任务执行。
+- 异步 Rust 操作是惰性的，需要调用者轮询它们。
+- Waker 被传递给 future，把 future 与调用的任务联系起来。
+- 当资源**未**就绪去完成操作，返回`Poll::Pending`并记录任务的 waker。
+- 当资源就绪，任务的 waker 会收到通知。
+- 当执行器收到通知，就会安排任务执行。
 - 再次轮询任务，这次资源就绪，任务可以推进。
 
 # 一些尚未解决的问题
 
-回想当我们实现`Delay`的future，我们说还有些问题需要解决。Rust异步模型允许单个future在执行时夸任务迁移。考虑以下代码：
+回想当我们实现`Delay`的 future，我们说还有些问题需要解决。Rust 异步模型允许单个 future 在执行时夸任务迁移。考虑以下代码：
 
 ```rust
 use futures::future::poll_fn;
@@ -516,11 +517,11 @@ async fn main() {
 }
 ```
 
-`pull_fn`函数使用闭包创建一个`Future`实例。上述代码片段创建了一个`Delay`实例，并轮询了一次，然后把`Delay`实例发送给等待它的新任务。此例中，使用**不同的**Waker实例会导致多次调用`Delay::poll`。当这种情况发生时，你需要保证当Waker传递到最近一次轮询调用时调用唤醒。
+`pull_fn`函数使用闭包创建一个`Future`实例。上述代码片段创建了一个`Delay`实例，并轮询了一次，然后把`Delay`实例发送给等待它的新任务。此例中，使用**不同的**Waker 实例会导致多次调用`Delay::poll`。当这种情况发生时，你需要保证当 Waker 传递到最近一次轮询调用时调用唤醒。
 
-当实现future时，你不能认为每次调用`poll`都**能**提供不同的`Waker`实例。poll函数必须使用新的waker来更新任何先前记录的waker。
+当实现 future 时，你不能认为每次调用`poll`都**能**提供不同的`Waker`实例。poll 函数必须使用新的 waker 来更新任何先前记录的 waker。
 
-我们稍早前实现的`Delay`每次轮询时都会产生一个新线程。这没啥问题，但如果轮询非常频繁可能导致效率低下（例如，如果你`select!`这个future和一些其他future，只要发生事件就开始轮询二者）。一种方法是记住是否你已经生成了一个线程，尽在你还没生成线程时，才生成一个新线程。但是，如果这样做，你必须保证线程的`Waker`在调用poll之后更新，否则你就不会唤醒最新的`Waker`
+我们稍早前实现的`Delay`每次轮询时都会产生一个新线程。这没啥问题，但如果轮询非常频繁可能导致效率低下（例如，如果你`select!`这个 future 和一些其他 future，只要发生事件就开始轮询二者）。一种方法是记住是否你已经生成了一个线程，尽在你还没生成线程时，才生成一个新线程。但是，如果这样做，你必须保证线程的`Waker`在调用 poll 之后更新，否则你就不会唤醒最新的`Waker`
 
 为了修复之前的实现，我们可以这样做：
 
@@ -598,11 +599,11 @@ impl Future for Delay {
 }
 ```
 
-这有点复杂，但是想法是，每次调用`poll`的时候，future会检查提供的waker是否与之前记录的waker相匹配。如果两个waker匹配，不用执行其他操作。如果不比配，那么记录的waker必须被更新。
+这有点复杂，但是想法是，每次调用`poll`的时候，future 会检查提供的 waker 是否与之前记录的 waker 相匹配。如果两个 waker 匹配，不用执行其他操作。如果不比配，那么记录的 waker 必须被更新。
 
 ## 通知工具 Notify utility
 
-我们演示了一个`Delay`future是如何通过使用waker手动实现的。Waker是异步Rust工作的基础。通常情况下，没必要理解到这个层次。例如，在例子`Delay`中，我们可以使用[`tokio::sync::Notify`](https://docs.rs/tokio/1/tokio/sync/struct.Notify.html)工具来为它实现`async/await`。该工具提供了基本的任务通知机制。它会处理waker的细节，包含确保记录的waker与当前任务相匹配。
+我们演示了一个`Delay`future 是如何通过使用 waker 手动实现的。Waker 是异步 Rust 工作的基础。通常情况下，没必要理解到这个层次。例如，在例子`Delay`中，我们可以使用[`tokio::sync::Notify`](https://docs.rs/tokio/1/tokio/sync/struct.Notify.html)工具来为它实现`async/await`。该工具提供了基本的任务通知机制。它会处理 waker 的细节，包含确保记录的 waker 与当前任务相匹配。
 
 使用[`Notify`](https://docs.rs/tokio/1/tokio/sync/struct.Notify.html)，我们可以通过`async/await`来实现`delay`函数，就像这样：
 
@@ -631,4 +632,3 @@ async fn delay(dur: Duration) {
     notify.notified().await;
 }
 ```
-

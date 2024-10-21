@@ -1,0 +1,334 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Unit Testing 单元测试 - Mini Redis Tokio Tutorial 中文版</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="Intro.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Overview.html"><strong aria-hidden="true">1.1.</strong> Overview 概览</a></li><li class="chapter-item expanded "><a href="Setup.html"><strong aria-hidden="true">1.2.</strong> Setup 准备工作</a></li><li class="chapter-item expanded "><a href="HelloTokio.html"><strong aria-hidden="true">1.3.</strong> Hello Tokio 你好 Tokio</a></li><li class="chapter-item expanded "><a href="Spawning.html"><strong aria-hidden="true">1.4.</strong> Spawning 生成任务</a></li><li class="chapter-item expanded "><a href="Sharedstate.html"><strong aria-hidden="true">1.5.</strong> Shared state 共享状态</a></li><li class="chapter-item expanded "><a href="Channels.html"><strong aria-hidden="true">1.6.</strong> Channels 管道</a></li><li class="chapter-item expanded "><a href="IO.html"><strong aria-hidden="true">1.7.</strong> I/O</a></li><li class="chapter-item expanded "><a href="Framing.html"><strong aria-hidden="true">1.8.</strong> Framing 解析帧</a></li><li class="chapter-item expanded "><a href="Asyncindepth.html"><strong aria-hidden="true">1.9.</strong> Async in depth 深入异步</a></li><li class="chapter-item expanded "><a href="Select.html"><strong aria-hidden="true">1.10.</strong> Select 选择先完成的</a></li><li class="chapter-item expanded "><a href="Streams.html"><strong aria-hidden="true">1.11.</strong> Streams 流</a></li></ol></li><li class="chapter-item expanded "><a href="Topics.html"><strong aria-hidden="true">2.</strong> Topics 其他主题</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="Bridgingwithsynccode.html"><strong aria-hidden="true">2.1.</strong> Bridging with sync code 异步与同步代码共存</a></li><li class="chapter-item expanded "><a href="Gracefulshutdown.html"><strong aria-hidden="true">2.2.</strong> Graceful shutdown 如何优雅地结束程序</a></li><li class="chapter-item expanded "><a href="Tracing.html"><strong aria-hidden="true">2.3.</strong> Getting started with Tracing 开始使用Tracing日志</a></li><li class="chapter-item expanded "><a href="TracingNext.html"><strong aria-hidden="true">2.4.</strong> Next steps with Tracing 更进一步使用Tracing日志</a></li><li class="chapter-item expanded "><a href="UnitTesting.html" class="active"><strong aria-hidden="true">2.5.</strong> Unit Testing 单元测试</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Mini Redis Tokio Tutorial 中文版</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="unit-testing-单元测试"><a class="header" href="#unit-testing-单元测试">Unit Testing 单元测试</a></h1>
+<p>本页的目的是提供有关如何在异步应用中写单元测试的建议。</p>
+<h1 id="测试中暂停和恢复时间"><a class="header" href="#测试中暂停和恢复时间">测试中暂停和恢复时间</a></h1>
+<p>有时，异步代码可以通过<a href="https://docs.rs/tokio/1/tokio/time/fn.sleep.html"><code>tokio::time::sleep</code></a>或等待<a href="https://docs.rs/tokio/1/tokio/time/struct.Interval.html#method.tick"><code>tokio::time::Interval::tick</code></a>来显式等待。当单元测试开始运行的非常缓慢时，基于时间的测试（例如，指数避退）可能变得非常麻烦。然而，在内部 tokio 的时间相关功能支持暂停和恢复时间。任何提前准备好的时间相关的 future 都有暂停时间的效果。与时间相关的 future 的提前解决的条件是没有更多其他可能提前就绪的 future。当唯一的 future 与时间相关时，这在本质上是时间的快进：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[tokio::test]
+async fn paused_time() {
+    tokio::time::pause();
+    let start = std::time::Instant::now();
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    println!("{:?}ms", start.elapsed().as_millis());
+}
+<span class="boring">}</span></code></pre></pre>
+<p>这代码在正常的机器上会输出<code>0ms</code>。</p>
+<p>对于单元测试来说，整个过程中保持时间暂停通常很有用。可以通过调用<code>start_paused</code>宏设置为<code>true</code>来实现：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[tokio::test(start_paused = true)]
+async fn paused_time() {
+    let start = std::time::Instant::now();
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    println!("{:?}ms", start.elapsed().as_millis());
+}
+<span class="boring">}</span></code></pre></pre>
+<p>查看 <a href="https://docs.rs/tokio/latest/tokio/attr.test.html#configure-the-runtime-to-start-with-time-paused">tokio::test "设置运行时来让时间暂停"</a> 以获取详细信息。</p>
+<p>当然，即使使用不同时间相关 future，未来解析的时间顺序也不会改变：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[tokio::test(start_paused = true)]
+async fn interval_with_paused_time() {
+    let mut interval = interval(Duration::from_millis(300));
+    let _ = timeout(Duration::from_secs(1), async move {
+        loop {
+            interval.tick().await;
+            println!("Tick!");
+        }
+    })
+    .await;
+}
+<span class="boring">}</span></code></pre></pre>
+<p>这段代码正好打印 4 次<code>Tick!</code>。</p>
+<h1 id="使用asyncread和asyncwrite进行模拟"><a class="header" href="#使用asyncread和asyncwrite进行模拟">使用<a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncRead.html"><code>AsyncRead</code></a>和<a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>进行模拟</a></h1>
+<p>异步读写的通用 trait（<a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncRead.html"><code>AsyncRead</code></a>和<a href="https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"><code>AsyncWrite</code></a>）是用来被实现的，比如，套接字。它们可以用于模拟套接字执行的 I/O。</p>
+<p>让我们考虑一个 TCP 服务端循环：</p>
+<pre><pre class="playground"><code class="language-rust">use tokio::net::TcpListener;
+
+#[tokio::main]
+async fn main() {
+    let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
+    loop {
+        let Ok((mut socket, _)) = listener.accept().await else {
+            eprintln!("Failed to accept client");
+            continue;
+        };
+
+        tokio::spawn(async move {
+            let (reader, writer) = socket.split();
+            // 运行一些客户端连接句柄, 比如:
+            // handle_connection(reader, writer)
+                // .await
+                // .expect("Failed to handle connection");
+        });
+    }
+}</code></pre></pre>
+<p>这里，每个 TCP 客户端连接都由专用的 tokio 任务提供了服务。该任务有一个 reader 和一个 writer，它们是从<a href="https://docs.rs/tokio/latest/tokio/net/struct.TcpStream.html"><code>TcpStream</code></a>分离(<a href="https://docs.rs/tokio/latest/tokio/net/struct.TcpStream.html#method.split">split</a>)出来的。</p>
+<p>考虑实际客户端句柄任务，尤其是函数签名的<strong>where</strong>句：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
+
+async fn handle_connection&lt;Reader, Writer&gt;(
+    reader: Reader,
+    mut writer: Writer,
+) -&gt; std::io::Result&lt;()&gt;
+where
+    Reader: AsyncRead + Unpin,
+    Writer: AsyncWrite + Unpin,
+{
+    let mut line = String::new();
+    let mut reader = BufReader::new(reader);
+
+    loop {
+        if let Ok(bytes_read) = reader.read_line(&amp;mut line).await {
+            if bytes_read == 0 {
+                break Ok(());
+            }
+            writer
+                .write_all(format!("Thanks for your message.\r\n").as_bytes())
+                .await
+                .unwrap();
+        }
+        line.clear();
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p>本质上，实现<code>AsyncRead</code>和<code>AsyncWrite</code>的 reader 和 writer 都是按顺序提供服务的。对于每个给定的行，句柄都会回复<code>"Thanks for your message"</code>。</p>
+<p>要对客户端的连接句柄进行单元测试，我们需要使用<a href="https://docs.rs/tokio-test/latest/tokio_test/io/struct.Builder.html"><code>tokio_test::io::Builder</code></a>进行模拟：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[tokio::test]
+async fn client_handler_replies_politely() {
+    let reader = tokio_test::io::Builder::new()
+        .read(b"Hi there\r\n")
+        .read(b"How are you doing?\r\n")
+        .build();
+    let writer = tokio_test::io::Builder::new()
+        .write(b"Thanks for your message.\r\n")
+        .write(b"Thanks for your message.\r\n")
+        .build();
+    let _ = handle_connection(reader, writer).await;
+}
+<span class="boring">}</span></code></pre></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="TracingNext.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="TracingNext.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,9 @@
+[book]
+authors = ["CakeAL"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Mini Redis Tokio Tutorial 中文版"
+
+[build]
+build-dir = "../docs"

@@ -9,8 +9,4 @@
 点击左侧目录即可，然后在 [github 项目](https://github.com/CakeAL/mini-redis-tokio-tutorial-zh)中查看 Commit 历史记录，即可看到对应每一章节更改的内容。\
 英文 Tutorial 原链接: [https://tokio.rs/tokio/tutorial](https://tokio.rs/tokio/tutorial)
 
-# 在线观看
-
-[点我](https://cakeal.github.io/mini-redis-tokio-tutorial-zh/)
-
 > 本文档最后更新日期：2024 年 10 月 21 日
